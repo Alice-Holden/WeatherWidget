@@ -1,65 +1,71 @@
 <template>
-<div class="settings">
-  <div class="settings__header">
-    <div class="settings__title">
-      Settings
+  <div class="settings">
+    <div class="settings__header">
+      <div class="settings__title">
+        Settings
+      </div>
+      <div class="settings__close">
+        <!--  icon by Icons8-->
+        <img
+            src="/icon/close.svg"
+            alt="icon"
+            @click="$emit('close')"
+        />
+      </div>
     </div>
-    <div class="settings__close">
-      <!--  icon by Icons8-->
-      <img
-          src="/icon/close.svg"
-          alt="icon"
-          @click="$emit('close')"
-      />
-    </div>
-  </div>
-  <div
-      v-if="cities.length > 0"
-      class="settings__selected-cities"
-  >
     <div
-        v-for="(city, index) in cities"
-        :key="city.name + index"
-        draggable="true"
-        @drag="drag(index)"
-        @dragover.prevent
-        @drop.stop="drop(index)"
-        class="settings__city"
+        v-if="cities.length > 0"
+        class="settings__selected-cities"
     >
-      <div class="settings__hamburger">
-        <img
-            src="/icon/hamburger.svg"
-            alt="hamburger"
-        />
+      <div
+          v-for="(city, index) in cities"
+          :key="city.name + index"
+          draggable="true"
+          @drag="drag(index)"
+          @dragover.prevent
+          @drop.stop="drop(index)"
+          class="settings__city"
+      >
+        <div class="settings__hamburger">
+          <img
+              src="/icon/hamburger.svg"
+              alt="hamburger"
+          />
+        </div>
+        <div>{{ city.name }}</div>
+        <div class="settings__delete">
+          <img
+              src="/icon/delete.svg"
+              alt="delete"
+              @click="deleteCity(index)"
+          />
+        </div>
       </div>
-      <div>{{city.name}}</div>
-      <div class="settings__delete">
-        <img
-            src="/icon/delete.svg"
-            alt="delete"
-            @click="deleteCity(index)"
-        />
-      </div>
+
+    </div>
+    <div class="settings__input">
+      <input
+          v-model="city"
+          type="text"
+          placeholder="Enter city name"
+          @keyup.enter="addCity"
+      />
+      <button @click="addCity">Add</button>
     </div>
 
   </div>
-  <div class="settings__input">
-    <input
-        v-model="city"
-        type="text"
-        placeholder="Enter city name"
-        @keyup.enter="addCity"
-    />
-    <button @click="addCity">Add</button>
-  </div>
-
-</div>
 </template>
 
 <script>
 export default {
   name: "SettingsForSelectedCities",
   emits: ['close', 'update-cities'],
+  props: {
+    apiKey: {
+      type: String,
+      required: true
+    }
+  },
   data() {
     return {
       cities: [],
@@ -78,19 +84,36 @@ export default {
         localStorage.removeItem('cities')
       }
     },
-  /**
-   * @description method for adding a city to the list of selected cities
-   */
+    /**
+     * @description method for adding a city to the list of selected cities
+     */
     addCity() {
       if (this.city) {
-        if(!this.cities.find(item => item.name === this.city)) {
-          this.cities.push({
-            name: this.city
-          })
+        const cityToAdd = {
+          name: this.city
         }
+        fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${this.city}&limit=1&appid=${this.apiKey}`)
+            .then(response => response.json())
+            .then(data => {
+              if (data.length === 0) {
+                alert('City not found')
+                return
+              }
+              cityToAdd.lat = data[0].lat
+              cityToAdd.lon = data[0].lon
+              cityToAdd.country = data[0].country
+              cityToAdd.name = data[0].name
 
-        this.$emit('update-cities', this.cities)
-        this.save()
+              if (!this.cities.find(item => item.name === cityToAdd.name)) {
+                this.cities.push(cityToAdd)
+                this.$emit('update-cities', this.cities)
+                this.save()
+              }else {
+                alert('This city is already in the list')
+              }
+
+            })
+
         this.city = ''
       }
     },
@@ -101,7 +124,7 @@ export default {
     drag(index) {
       this.draggedItem = index;
     },
-    drop( index) {
+    drop(index) {
       this.cities.splice(index, 0, this.cities.splice(this.draggedItem, 1)[0]);
       this.save()
       this.$emit('update-cities', this.cities)
@@ -133,6 +156,7 @@ export default {
   border-radius: 4px;
   border: 1px solid #ccc;
   background-color: #fff;
+
   &__header {
     display: flex;
     justify-content: space-between;
@@ -140,63 +164,76 @@ export default {
     z-index: 1;
     margin-bottom: 20px;
   }
+
   &__title {
     font-size: 18px;
     font-weight: 400;
   }
 
-  &__close{
+  &__close {
     cursor: pointer;
     width: 20px;
     transition: all .3s ease;
+
     &:hover {
       transform: scale(1.1);
     }
+
     img {
       width: 100%;
     }
   }
-  &__selected-cities{
+
+  &__selected-cities {
     display: flex;
     flex-direction: column;
     gap: 10px;
   }
-  &__city{
+
+  &__city {
     padding: 5px;
     background: antiquewhite;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  &__hamburger{
+
+  &__hamburger {
     pointer-events: none;
     width: 24px;
     height: 24px;
     cursor: move;
-    img{
+
+    img {
       width: 100%;
     }
   }
-  &__delete{
+
+  &__delete {
     width: 16px;
     cursor: pointer;
     transition: all .3s ease;
+
     &:hover {
       transform: scale(1.1);
     }
-    img{
+
+    img {
       width: 100%;
     }
   }
-  &__input{
+
+  &__input {
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin-top: 20px;
-    input{
+
+    input {
       padding: 5px;
     }
-    button{
+
+    button {
       width: 100%;
       padding: 5px;
       cursor: pointer;

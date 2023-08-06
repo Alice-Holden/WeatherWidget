@@ -14,6 +14,7 @@
     <SettingsForSelectedCities
         v-if="settingsOpen"
         class="weather-block__settings"
+        :api-key="apiKey"
         @close="settingsOpen = false"
         @update-cities="updateCitiesData"
     />
@@ -68,13 +69,7 @@ export default {
         if (this.weathers.find((weather) => weather.name === city.name)) {
           return
         }
-        fetches.push(
-            fetch(`http://api.openweathermap.org/geo/1.0/direct?q=${city.name}&limit=1&appid=${this.apiKey}`)
-                .then(response => response.json())
-                .then(async response => {
-                  await this.getCityWeather(response[0]['lat'], response[0]['lon'], response[0]['name'], response[0]['country'])
-                })
-        )
+        fetches.push(this.getCityWeather(city.lat, city.lon, city.name, city.country))
       })
 
       Promise.all(fetches).then(() => {
