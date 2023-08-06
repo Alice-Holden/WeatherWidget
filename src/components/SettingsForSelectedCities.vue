@@ -50,6 +50,12 @@
           placeholder="Enter city name"
           @keyup.enter="addCity"
       />
+      <div
+          v-if="error"
+          class="settings__error"
+      >
+        {{ error }}
+      </div>
       <button @click="addCity">Add</button>
     </div>
 
@@ -70,11 +76,17 @@ export default {
     return {
       cities: [],
       city: '',
-      draggedItem: null
+      draggedItem: null,
+      error: '',
     }
   },
   mounted() {
     this.load()
+  },
+  watch: {
+    city: function () {
+      this.error = ''
+    }
   },
   methods: {
     load() {
@@ -96,7 +108,7 @@ export default {
             .then(response => response.json())
             .then(data => {
               if (data.length === 0) {
-                alert('City not found')
+                this.error = 'City not found'
                 return
               }
               cityToAdd.lat = data[0].lat
@@ -109,7 +121,7 @@ export default {
                 this.$emit('update-cities', this.cities)
                 this.save()
               }else {
-                alert('This city is already in the list')
+                this.error = 'This city is already in the list'
               }
 
             })
@@ -222,7 +234,10 @@ export default {
       width: 100%;
     }
   }
-
+  &__error {
+    color: red;
+    font-size: 12px;
+  }
   &__input {
     display: flex;
     flex-direction: column;
